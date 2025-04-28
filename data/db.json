@@ -1,0 +1,106 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "title": "Wireless Bluetooth Earbuds",
+      "description": "High-quality wireless earbuds with noise cancellation and long battery life.",
+      "price": 79.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Earbuds",
+      "category": "electronics",
+      "rating": 4.5,
+      "reviewsCount": 123,
+      "discount": 15
+    },
+    {
+      "id": "2",
+      "title": "Smart Watch",
+      "description": "Feature-rich smartwatch with health monitoring and notifications.",
+      "price": 129.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Smartwatch",
+      "category": "electronics",
+      "rating": 4.2,
+      "reviewsCount": 87,
+      "discount": 0
+    },
+    {
+      "id": "3",
+      "title": "Men's Running Shoes",
+      "description": "Comfortable and durable running shoes for all terrains.",
+      "price": 89.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Running+Shoes",
+      "category": "clothing",
+      "rating": 4.7,
+      "reviewsCount": 215,
+      "discount": 20
+    },
+    {
+      "id": "4",
+      "title": "Coffee Maker",
+      "description": "Programmable coffee maker with thermal carafe.",
+      "price": 59.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Coffee+Maker",
+      "category": "home",
+      "rating": 4,
+      "reviewsCount": 56,
+      "discount": 0
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "1",
+      "title": "Summer Sale",
+      "description": "Get up to 50% off on all summer items!",
+      "imageUrl": "https://via.placeholder.com/1200x400?text=Summer+Sale",
+      "discountPercentage": 50,
+      "startDate": "2025-04-01",
+      "endDate": "2025-05-31"
+    },
+    {
+      "id": "2",
+      "title": "Electronics Fest",
+      "description": "Amazing deals on the latest gadgets",
+      "imageUrl": "https://via.placeholder.com/1200x400?text=Electronics+Fest",
+      "discountPercentage": 30,
+      "startDate": "2025-04-15",
+      "endDate": "2025-05-15"
+    },
+    {
+      "id": "3",
+      "title": "Free Shipping Weekend",
+      "description": "Free shipping on all orders over $50",
+      "imageUrl": "https://via.placeholder.com/1200x400?text=Free+Shipping",
+      "discountPercentage": 0,
+      "startDate": "2025-04-28",
+      "endDate": "2025-04-30"
+    }
+  ],
+  "shoppingcart": [
+    {
+      "id": "86ed",
+      "productId": "3",
+      "title": "Men's Running Shoes",
+      "price": 89.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Running+Shoes",
+      "quantity": 1,
+      "note": ""
+    },
+    {
+      "id": "32ea",
+      "productId": "4",
+      "title": "Coffee Maker",
+      "price": 59.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Coffee+Maker",
+      "quantity": 4,
+      "note": ""
+    },
+    {
+      "id": "5417",
+      "productId": "1",
+      "title": "Wireless Bluetooth Earbuds",
+      "price": 79.99,
+      "imageUrl": "https://via.placeholder.com/300x300?text=Earbuds",
+      "quantity": 4,
+      "note": ""
+    }
+  ]
+}
