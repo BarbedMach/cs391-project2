@@ -6,6 +6,8 @@ import { CartService } from "@/services/cartService";
 export default function ShoppingCart() {
   const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [subtotal, setSubtotal] = useState(0);
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -28,24 +30,37 @@ export default function ShoppingCart() {
   }, []);
 
   const calculateTotal = (items) => {
-    const subtotal = items.reduce(
+    const newSubtotal = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
-    const delivery = subtotal < 1000 ? 50 : 0;
-    setTotal(subtotal + delivery);
+    const newDelivery = newSubtotal < 1000 ? 50 : 0;
+
+    setSubtotal(newSubtotal);
+    setDeliveryFee(newDelivery);
+    setTotal(newSubtotal + newDelivery);
   };
 
   const handleQuantityChange = async (id, newQuantity) => {
-    if (newQuantity < 1) return; // Prevent negative quantities
+    if (newQuantity < 1) return;
     try {
-      await CartService.updateQuantity(id, newQuantity);
+      // 1. Find the current item
+      const currentItem = cart.find((item) => item.id === id);
+
+      // 2. Update with full item data
+      await CartService.updateQuantity(id, {
+        ...currentItem, // Preserve all existing fields
+        quantity: newQuantity, // Update quantity
+      });
+
+      // 3. Update local state with full item data
       const updatedCart = cart.map((item) =>
         item.id === id ? { ...item, quantity: newQuantity } : item
       );
+
       setCart(updatedCart);
       calculateTotal(updatedCart);
-      window.dispatchEvent(new CustomEvent("cartUpdated")); // Notify navbar
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
     } catch (err) {
       console.error("Error updating quantity:", err);
     }
@@ -90,7 +105,7 @@ export default function ShoppingCart() {
                 />
               </td>
               <td>{item.title}</td>
-              {/*<td>${item.price.toFixed(2)}</td>*/}
+              <td>${item.price.toFixed(2)}</td>
               <td>
                 <div className="d-flex align-items-center gap-2">
                   <Button
@@ -131,8 +146,26 @@ export default function ShoppingCart() {
 
       <div className="text-end">
         <h4 className="text-gradient">
-          Total: ${total.toFixed(2)} (Including Delivery)
+          Total: ${total.toFixed(2)}{" "}
+          {deliveryFee > 0 ? (
+            <span className="text-muted fs-6">(Including Delivery)</span>
+          ) : (
+            <span className="text-success fs-6">(No Delivery Fee)</span>
+          )}
         </h4>
+
+        {deliveryFee === 0 && subtotal > 0 && (
+          <div className="text-success mb-2">
+            🎉 Free delivery for orders over $1000!
+          </div>
+        )}
+
+        {deliveryFee > 0 && (
+          <div className="text-muted mb-2">
+            Add ${(1000 - subtotal).toFixed(2)} more to get free delivery!
+          </div>
+        )}
+
         <Button variant="primary" className="mt-3">
           Proceed to Checkout
         </Button>

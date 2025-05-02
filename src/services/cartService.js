@@ -10,8 +10,8 @@ export const CartService = {
       price: item.price,
       quantity: item.quantity,
     }),
-  updateQuantity: (id, quantity) =>
-    api.put(`/shoppingcart/${id}`, { quantity }),
+  updateQuantity: (id, updatedItem) =>
+    api.put(`/shoppingcart/${id}`, updatedItem),
   removeItem: (id) => api.delete(`/shoppingcart/${id}`),
   clearCart: () => api.delete("/shoppingcart"),
 };
