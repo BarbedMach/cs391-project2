@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Carousel, Row, Col, Badge } from "react-bootstrap";
+import { Carousel, Badge } from "react-bootstrap";
+import api from "@/utils/api";
 import ProductCard from "@/components/ProductCard";
 
 const CampaignCarousel = ({ products }) => {
@@ -11,10 +12,8 @@ const CampaignCarousel = ({ products }) => {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await fetch("http://localhost:3001/campaigns");
-        if (!response.ok) throw new Error("Failed to fetch campaigns");
-        const data = await response.json();
-        setCampaigns(data);
+        const response = await api.get("/campaigns");
+        setCampaigns(response.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -24,7 +23,6 @@ const CampaignCarousel = ({ products }) => {
 
     fetchCampaigns();
   }, []);
-
   if (loading)
     return <div className="text-center py-3">Loading campaigns...</div>;
   if (error)
@@ -45,8 +43,8 @@ const CampaignCarousel = ({ products }) => {
 
         return (
           <Carousel.Item key={campaign.id}>
-            <div className="p-4 bg-light">
-              <div className="text-center mb-4">
+            <div className="p-4 bg-light rounded">
+              <div className="text-center mb-4 rounded">
                 <h2 className="text-gradient d-inline-block">
                   {campaign.title}
                 </h2>

@@ -1,7 +1,7 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { Row, Col } from "react-bootstrap";
+import api from "@/utils/api";
 import ProductCard from "@/components/ProductCard";
 import CampaignCarousel from "@/components/CampaignCarousel";
 import FilterSortBar from "@/components/FilterSortBar";
@@ -18,29 +18,20 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Build query parameters
-        const params = new URLSearchParams();
-        if (searchQuery) params.append("q", searchQuery);
-        if (filterCategory) params.append("category", filterCategory);
-        if (sortOption) {
-          const [sort, order] = sortOption.split("_");
-          params.append("_sort", sort);
-          params.append("_order", order || "asc");
-        }
+        const params = {
+          q: searchQuery,
+          category: filterCategory,
+          _sort: sortOption?.split("_")[0],
+          _order: sortOption?.split("_")[1] || "asc",
+        };
 
-        const response = await fetch(
-          `http://localhost:3001/products?${params.toString()}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
+        const response = await api.get("/products", { params });
+        const allCategories = [
+          ...new Set(response.data.map((p) => p.category)),
+        ].filter(Boolean);
 
-        // Extract unique categories from all products
-        const allCategories = [...new Set(data.map((p) => p.category))].filter(
-          Boolean
-        );
         setCategories(allCategories);
-
-        setProducts(data);
+        setProducts(response.data);
       } catch (err) {
         setError(err.message);
       } finally {

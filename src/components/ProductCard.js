@@ -4,6 +4,19 @@ import Link from "next/link";
 import { Card, Button, Badge } from "react-bootstrap";
 
 const ProductCard = ({ product }) => {
+  const handleAddToCart = async () => {
+    try {
+      await api.post("/shoppingcart", {
+        productId: product.id,
+        quantity: 1,
+        price: product.price,
+      });
+      // Handle success
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+    }
+  };
+
   const originalPrice = (
     (product.price * 100) /
     (100 - product.discountPercentage)
