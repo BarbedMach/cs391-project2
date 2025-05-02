@@ -48,26 +48,31 @@ export default function Home() {
   const fetchFilteredProducts = (products) => {
     let filtered = [...products];
 
-    // Apply search filter
+    // Search filter
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (p) =>
-          p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+          p.title.toLowerCase().includes(query) ||
+          p.description.toLowerCase().includes(query)
       );
     }
 
-    // Apply category filter
+    // Category filter
     if (filterCategory) {
       filtered = filtered.filter((p) => p.category === filterCategory);
     }
 
-    // Apply sorting
+    // Sorting
     if (sortOption) {
       const [sortField, sortOrder] = sortOption.split("_");
       filtered.sort((a, b) => {
-        if (sortOrder === "asc") return a[sortField] - b[sortField];
-        return b[sortField] - a[sortField];
+        const valueA = a[sortField];
+        const valueB = b[sortField];
+
+        if (sortOrder === "asc") return valueA - valueB;
+        if (sortOrder === "desc") return valueB - valueA;
+        return 0;
       });
     }
 

@@ -1,74 +1,76 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Row, Col } from "react-bootstrap";
-import api from "@/utils/api";
-import ProductCard from "@/components/ProductCard";
-import CampaignCarousel from "@/components/CampaignCarousel";
-import FilterSortBar from "@/components/FilterSortBar";
+import { Form, InputGroup, Dropdown } from "react-bootstrap";
+import { Funnel, SortDown } from "react-bootstrap-icons";
 
-export default function Home() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOption, setSortOption] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const params = {
-          q: searchQuery,
-          category: filterCategory,
-          _sort: sortOption?.split("_")[0],
-          _order: sortOption?.split("_")[1] || "asc",
-        };
-
-        const response = await api.get("/products", { params });
-
-        const allProducts = await api.get("/products");
-        const allCategories = [
-          ...new Set(allProducts.data.map((p) => p.category)),
-        ];
-
-        setCategories(allCategories);
-        setProducts(response.data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, [searchQuery, sortOption, filterCategory]);
-
-  if (loading) return <div className="text-center py-5">Loading...</div>;
-  if (error)
-    return <div className="text-center py-5 text-danger">Error: {error}</div>;
-
+const FilterSortBar = ({
+  searchQuery,
+  sortOption,
+  filterCategory,
+  onSearchChange,
+  onSortChange,
+  onFilterChange,
+  categories,
+}) => {
   return (
-    <main className="py-4">
-      <CampaignCarousel products={products} />
+    <div className="mb-4 px-3 py-2">
+      <div className="d-flex flex-column flex-md-row gap-3 mt-1 mb-1">
+        {/* Search Input */}
+        <InputGroup className="flex-grow-1 border border-primary rounded">
+          <Form.Control
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </InputGroup>
 
-      <FilterSortBar
-        searchQuery={searchQuery}
-        sortOption={sortOption}
-        filterCategory={filterCategory}
-        onSearchChange={setSearchQuery}
-        onSortChange={setSortOption}
-        onFilterChange={setFilterCategory}
-        categories={categories}
-      />
+        {/* Sort Dropdown */}
+        <Dropdown>
+          <Dropdown.Toggle variant="outline-primary">
+            <SortDown className="me-2" />
+            {sortOption === "price_asc"
+              ? "Price: Low to High"
+              : sortOption === "price_desc"
+              ? "Price: High to Low"
+              : sortOption === "rating_desc"
+              ? "Rating: High to Low"
+              : "Sort By"}
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item onClick={() => onSortChange("price_asc")}>
+              Price: Low to High
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => onSortChange("price_desc")}>
+              Price: High to Low
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => onSortChange("rating_desc")}>
+              Rating: High to Low
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
 
-      <Row xs={1} sm={2} md={3} lg={4} xl={5} className="g-4 px-3">
-        {products.map((product) => (
-          <Col key={product.id}>
-            <ProductCard product={product} />
-          </Col>
-        ))}
-      </Row>
-    </main>
+        {/* Filter Dropdown */}
+        <Dropdown>
+          <Dropdown.Toggle variant="outline-primary">
+            <Funnel className="me-2" />
+            {filterCategory || "Filter by Category"}
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item onClick={() => onFilterChange("")}>
+              All Categories
+            </Dropdown.Item>
+            {categories.map((category) => (
+              <Dropdown.Item
+                key={category}
+                onClick={() => onFilterChange(category)}
+              >
+                {category}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        </Dropdown>
+      </div>
+    </div>
   );
-}
+};
+
+export default FilterSortBar;
