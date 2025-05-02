@@ -43,28 +43,26 @@ export default function ProductDetail() {
   const handleAddToCart = async () => {
     try {
       if (cartItem) {
-        // Update existing item
         await api.put(`/shoppingcart/${cartItem.id}`, {
           ...cartItem,
           quantity: quantity,
+          // Maintain all required fields
+          productId: product.id,
+          title: product.title,
+          image: product.images[0], // Fix inconsistent image source
+          price: product.price,
         });
       } else {
-        // Add new item
         await api.post("/shoppingcart", {
           productId: product.id,
-          quantity: quantity,
-          price: product.price,
           title: product.title,
-          image: product.thumbnail,
+          image: product.images[0], // Changed from thumbnail to images[0]
+          price: product.price,
+          quantity: quantity,
         });
       }
-
-      // Update UI and trigger cart refresh
       window.dispatchEvent(new CustomEvent("cartUpdated"));
-      setSuccess("Cart updated successfully!");
-      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError("Failed to update cart");
       console.error("Cart error:", err);
     }
   };

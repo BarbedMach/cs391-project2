@@ -90,7 +90,7 @@ export default function ShoppingCart() {
                 />
               </td>
               <td>{item.title}</td>
-              <td>${item.price.toFixed(2)}</td>
+              {/*<td>${item.price.toFixed(2)}</td>*/}
               <td>
                 <div className="d-flex align-items-center gap-2">
                   <Button

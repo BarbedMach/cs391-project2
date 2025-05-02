@@ -19,12 +19,7 @@
       "extraDiscount": 25
     }
   ],
-  "shoppingcart": [
-    {
-      "quantity": 2,
-      "id": "c1bb"
-    }
-  ],
+  "shoppingcart": [],
   "products": [
     {
       "id": "1",
