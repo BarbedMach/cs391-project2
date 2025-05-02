@@ -1,12 +1,6 @@
 {
   "campaigns": [
     {
-      "title": "Beauty Extravaganza",
-      "category": "beauty",
-      "extraDiscount": "14",
-      "id": "1"
-    },
-    {
       "id": "2",
       "title": "Luxury Fragrances",
       "category": "fragrances",
@@ -17,6 +11,12 @@
       "title": "Smart Home Deals",
       "category": "home-decoration",
       "extraDiscount": 25
+    },
+    {
+      "id": "8f48",
+      "title": "Sunglasses-campaign",
+      "category": "sunglasses",
+      "extraDiscount": "1"
     }
   ],
   "shoppingcart": [],

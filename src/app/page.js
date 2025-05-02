@@ -46,10 +46,29 @@ export default function Home() {
     if (allProducts.length > 0) {
       fetchFilteredProducts(allProducts);
     }
-  }, [searchQuery, sortOption, filterCategory]);
+  }, [searchQuery, sortOption, filterCategory, campaigns]);
 
   const fetchFilteredProducts = (products) => {
-    let filtered = [...products];
+    let filtered = [...products].map((product) => {
+      const applicableCampaign = campaigns.find(
+        (c) => c.category.toLowerCase() === product.category?.toLowerCase()
+      );
+
+      // Match ProductCard calculation
+      const originalPrice =
+        product.discountPercentage > 0
+          ? (product.price * 100) / (100 - product.discountPercentage)
+          : product.price;
+
+      const baseDiscount = product.discountPercentage || 0;
+      const campaignDiscount = applicableCampaign?.extraDiscount || 0;
+      const totalDiscount = Math.min(baseDiscount + campaignDiscount, 75);
+
+      return {
+        ...product,
+        calculatedPrice: (originalPrice * (100 - totalDiscount)) / 100,
+      };
+    });
 
     // Search filter
     if (searchQuery) {
@@ -70,8 +89,8 @@ export default function Home() {
     if (sortOption) {
       const [sortField, sortOrder] = sortOption.split("_");
       filtered.sort((a, b) => {
-        const valueA = a[sortField];
-        const valueB = b[sortField];
+        const valueA = sortField === "price" ? a.calculatedPrice : a[sortField];
+        const valueB = sortField === "price" ? b.calculatedPrice : b[sortField];
 
         if (sortOrder === "asc") return valueA - valueB;
         if (sortOrder === "desc") return valueB - valueA;
@@ -79,7 +98,9 @@ export default function Home() {
       });
     }
 
-    setFilteredProducts(filtered);
+    setFilteredProducts(
+      filtered.map((p) => ({ ...p, calculatedPrice: undefined }))
+    );
   };
 
   if (loading) return <div className="text-center py-5">Loading...</div>;

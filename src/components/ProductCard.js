@@ -54,7 +54,12 @@ const ProductCard = ({ product, campaigns = [] }) => {
   };
 
   return (
-    <Card className="h-100 shadow-sm border-primary border-2 nav-hover-effect">
+    <Card
+      className={`h-100 shadow-sm border-${
+        applicableCampaign ? "warning" : "primary"
+      } border-2 nav-hover-effect`}
+      style={{ borderColor: applicableCampaign ? "#ffd700" : undefined }}
+    >
       <div className="position-relative">
         <Link href={`/products/${product.id}`} className="text-decoration-none">
           <Card.Img
@@ -70,9 +75,7 @@ const ProductCard = ({ product, campaigns = [] }) => {
             >
               {totalDiscount.toFixed(2)}% OFF
               {applicableCampaign &&
-                ` (${product.discountPercentage}% + ${
-                  applicableCampaign ? applicableCampaign.extraDiscount : 0
-                }%)`}
+                ` (${product.discountPercentage}% + ${applicableCampaign.extraDiscount}%)`}
             </Badge>
           )}
         </Link>
