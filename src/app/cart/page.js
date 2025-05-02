@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Table, Button, Form } from "react-bootstrap";
-import api from "@/utils/api";
+import { Table, Button, Image } from "react-bootstrap";
 import { CartService } from "@/services/cartService";
 
 export default function ShoppingCart() {
@@ -18,7 +17,14 @@ export default function ShoppingCart() {
         console.error("Error fetching cart:", err);
       }
     };
+
     fetchCart();
+    // Listen for cart updates from other components
+    window.addEventListener("cartUpdated", fetchCart);
+
+    return () => {
+      window.removeEventListener("cartUpdated", fetchCart);
+    };
   }, []);
 
   const calculateTotal = (items) => {
@@ -30,14 +36,16 @@ export default function ShoppingCart() {
     setTotal(subtotal + delivery);
   };
 
-  const handleQuantityChange = async (id, quantity) => {
+  const handleQuantityChange = async (id, newQuantity) => {
+    if (newQuantity < 1) return; // Prevent negative quantities
     try {
-      await CartService.updateQuantity(id, quantity);
+      await CartService.updateQuantity(id, newQuantity);
       const updatedCart = cart.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        item.id === id ? { ...item, quantity: newQuantity } : item
       );
       setCart(updatedCart);
       calculateTotal(updatedCart);
+      window.dispatchEvent(new CustomEvent("cartUpdated")); // Notify navbar
     } catch (err) {
       console.error("Error updating quantity:", err);
     }
@@ -49,6 +57,7 @@ export default function ShoppingCart() {
       const updatedCart = cart.filter((item) => item.id !== id);
       setCart(updatedCart);
       calculateTotal(updatedCart);
+      window.dispatchEvent(new CustomEvent("cartUpdated")); // Notify navbar
     } catch (err) {
       console.error("Error removing item:", err);
     }
@@ -58,9 +67,10 @@ export default function ShoppingCart() {
     <div className="container py-5">
       <h1 className="text-gradient mb-4">Shopping Cart</h1>
 
-      <Table striped bordered hover>
+      <Table striped bordered hover responsive>
         <thead>
           <tr>
+            <th>Image</th>
             <th>Product</th>
             <th>Price</th>
             <th>Quantity</th>
@@ -71,18 +81,39 @@ export default function ShoppingCart() {
         <tbody>
           {cart.map((item) => (
             <tr key={item.id}>
-              <td>{item.title}</td>
-              <td>${item.price}</td>
               <td>
-                <Form.Control
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) =>
-                    handleQuantityChange(item.id, parseInt(e.target.value))
-                  }
-                  style={{ width: "80px" }}
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  thumbnail
+                  style={{ width: "50px", height: "50px", objectFit: "cover" }}
                 />
+              </td>
+              <td>{item.title}</td>
+              <td>${item.price.toFixed(2)}</td>
+              <td>
+                <div className="d-flex align-items-center gap-2">
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() =>
+                      handleQuantityChange(item.id, item.quantity - 1)
+                    }
+                    disabled={item.quantity <= 1}
+                  >
+                    -
+                  </Button>
+                  <span>{item.quantity}</span>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() =>
+                      handleQuantityChange(item.id, item.quantity + 1)
+                    }
+                  >
+                    +
+                  </Button>
+                </div>
               </td>
               <td>${(item.price * item.quantity).toFixed(2)}</td>
               <td>
@@ -99,14 +130,10 @@ export default function ShoppingCart() {
       </Table>
 
       <div className="text-end">
-        <h4 className="text-gradient">Total: ${total.toFixed(2)}</h4>
-        <Button
-          variant="primary"
-          className="mt-3"
-          onClick={() => {
-            /* Handle checkout */
-          }}
-        >
+        <h4 className="text-gradient">
+          Total: ${total.toFixed(2)} (Including Delivery)
+        </h4>
+        <Button variant="primary" className="mt-3">
           Proceed to Checkout
         </Button>
       </div>

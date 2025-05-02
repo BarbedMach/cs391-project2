@@ -2,17 +2,36 @@
 import React from "react";
 import Link from "next/link";
 import { Card, Button, Badge } from "react-bootstrap";
-import api from "@/utils/api";
+import { CartService } from "@/services/cartService";
 
 const ProductCard = ({ product }) => {
+  // ProductCard.js (updated handleAddToCart)
   const handleAddToCart = async () => {
     try {
-      await api.post("/shoppingcart", {
-        productId: product.id,
-        quantity: 1,
-        price: product.price,
-      });
-      // Trigger cart update event
+      // Fetch current cart to check for existing item
+      const cartResponse = await CartService.getCart();
+      const existingItem = cartResponse.data.find(
+        (item) => item.productId === product.id
+      );
+
+      if (existingItem) {
+        // Update quantity if item exists
+        await CartService.updateQuantity(
+          existingItem.id,
+          existingItem.quantity + 1
+        );
+      } else {
+        // Add new item with product details
+        await CartService.addToCart({
+          productId: product.id,
+          title: product.title,
+          image: product.images[0],
+          quantity: 1,
+          price: product.price,
+        });
+      }
+
+      // Notify other components of cart update
       window.dispatchEvent(new CustomEvent("cartUpdated"));
     } catch (err) {
       console.error("Error adding to cart:", err);

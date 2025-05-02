@@ -1,22 +1,35 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Card, Row, Col, Button, Badge, Form } from "react-bootstrap";
+import { Card, Row, Col, Button, Badge, Form, Alert } from "react-bootstrap";
+import api from "@/utils/api";
 
 export default function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [cartItem, setCartItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/products/${id}`);
-        if (!response.ok) throw new Error("Product not found");
-        const data = await response.json();
-        setProduct(data);
+        // Fetch product details
+        const productResponse = await api.get(`/products/${id}`);
+        setProduct(productResponse.data);
+
+        // Check existing cart items
+        const cartResponse = await api.get("/shoppingcart");
+        const existingItem = cartResponse.data.find(
+          (item) => item.productId === productResponse.data.id
+        );
+
+        if (existingItem) {
+          setCartItem(existingItem);
+          setQuantity(existingItem.quantity);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -24,27 +37,35 @@ export default function ProductDetail() {
       }
     };
 
-    fetchProduct();
+    fetchData();
   }, [id]);
 
   const handleAddToCart = async () => {
     try {
-      const response = await fetch("http://localhost:3001/shoppingcart", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      if (cartItem) {
+        // Update existing item
+        await api.put(`/shoppingcart/${cartItem.id}`, {
+          ...cartItem,
+          quantity: quantity,
+        });
+      } else {
+        // Add new item
+        await api.post("/shoppingcart", {
           productId: product.id,
           quantity: quantity,
           price: product.price,
-        }),
-      });
+          title: product.title,
+          image: product.thumbnail,
+        });
+      }
 
-      if (!response.ok) throw new Error("Failed to add to cart");
-      // Handle successful add to cart
+      // Update UI and trigger cart refresh
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
+      setSuccess("Cart updated successfully!");
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      console.error("Error adding to cart:", err);
+      setError("Failed to update cart");
+      console.error("Cart error:", err);
     }
   };
 
@@ -54,45 +75,41 @@ export default function ProductDetail() {
 
   return (
     <div className="container py-3">
+      {success && <Alert variant="success">{success}</Alert>}
+
       <Row className="g-4">
+        {/* Product Image */}
         <Col md={6}>
           <Card className="border-primary border-2 h-100">
-            <Card.Body className="p-0 d-flex align-items-center justify-content-center">
-              <Card.Img
-                variant="top"
-                src={product.images[0]}
-                style={{
-                  maxHeight: "500px",
-                  objectFit: "contain",
-                  width: "100%",
-                  padding: "1rem",
-                }}
-              />
-            </Card.Body>
+            <Card.Img
+              variant="top"
+              src={product.images[0]}
+              style={{
+                maxHeight: "500px",
+                objectFit: "contain",
+                padding: "1rem",
+              }}
+            />
           </Card>
         </Col>
+
+        {/* Product Details */}
         <Col md={6}>
           <Card className="border-primary border-2 h-100 p-3 d-flex flex-column">
             <div className="flex-grow-1">
-              <h1 className="text-gradient text-center mb-3">
-                {product.title}
-              </h1>
-              <Row className="text-center mb-3">
-                <Col>
-                  <h2 className="text-dark me-3">${product.price}</h2>
-                </Col>
-                <Col>
-                  {product.discountPercentage > 0 && (
-                    <Badge bg="danger" pill className="fs-5">
-                      {product.discountPercentage}% OFF
-                    </Badge>
-                  )}
-                </Col>
-              </Row>
-              <Card.Text className="fs-5 p-1 text-center">
-                {product.description}
-              </Card.Text>
-              <div className="mb-4 text-center">
+              <h1 className="text-gradient mb-3">{product.title}</h1>
+              <div className="d-flex align-items-center mb-3">
+                <h2 className="text-primary me-3">${product.price}</h2>
+                {product.discountPercentage > 0 && (
+                  <Badge bg="danger" pill className="fs-5">
+                    {product.discountPercentage}% OFF
+                  </Badge>
+                )}
+              </div>
+
+              <Card.Text className="fs-5 mb-4">{product.description}</Card.Text>
+
+              <div className="mb-4">
                 <h4 className="text-gradient">Product Details</h4>
                 <ul className="list-unstyled">
                   <li>
@@ -107,28 +124,30 @@ export default function ProductDetail() {
                 </ul>
               </div>
             </div>
+
+            {/* Quantity and Add to Cart */}
             <div className="mt-auto">
               <Form.Control
                 type="number"
                 min="1"
                 value={quantity}
-                onChange={(e) =>
-                  setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-                }
-                className="mb-3 w-100"
+                onChange={(e) => setQuantity(Math.max(1, e.target.value))}
+                className="mb-3"
               />
               <Button
                 variant="primary"
                 size="lg"
-                className="nav-hover-effect w-100 mt-auto text-gradient border-1 bg-transparent"
+                className="nav-hover-effect w-100"
                 onClick={handleAddToCart}
               >
-                <span className="text-gradient">Add to Cart</span>
+                {cartItem ? "Update Cart" : "Add to Cart"}
               </Button>
             </div>
           </Card>
         </Col>
       </Row>
+
+      {/* Reviews Section */}
       <Row className="mt-4">
         <Col xs={12}>
           <h4 className="text-gradient mb-3">Customer Reviews</h4>
