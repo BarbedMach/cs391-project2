@@ -1,10 +1,10 @@
 {
   "campaigns": [
     {
-      "id": "1",
       "title": "Beauty Extravaganza",
       "category": "beauty",
-      "extraDiscount": 15
+      "extraDiscount": "14",
+      "id": "1"
     },
     {
       "id": "2",
@@ -17,15 +17,106 @@
       "title": "Smart Home Deals",
       "category": "home-decoration",
       "extraDiscount": 25
-    },
-    {
-      "id": "9639",
-      "title": "Skin care campaign 1",
-      "category": "skin-care",
-      "extraDiscount": "10"
     }
   ],
-  "shoppingcart": [],
+  "shoppingcart": [
+    {
+      "id": "5795",
+      "productId": "2",
+      "quantity": 1,
+      "price": 19.99
+    },
+    {
+      "id": "3377",
+      "productId": "2",
+      "quantity": 1,
+      "price": 19.99
+    },
+    {
+      "id": "daea",
+      "productId": "2",
+      "quantity": 1,
+      "price": 19.99
+    },
+    {
+      "id": "09bc",
+      "productId": "2",
+      "quantity": 1,
+      "price": 19.99
+    },
+    {
+      "id": "446d",
+      "productId": "2",
+      "quantity": 1,
+      "price": 19.99
+    },
+    {
+      "id": "916b",
+      "productId": "2",
+      "quantity": 4,
+      "price": 19.99
+    },
+    {
+      "id": "98ff",
+      "productId": "2",
+      "quantity": 4,
+      "price": 19.99
+    },
+    {
+      "id": "0a71",
+      "productId": "2",
+      "quantity": 6,
+      "price": 19.99
+    },
+    {
+      "id": "b718",
+      "productId": "2",
+      "quantity": 6,
+      "price": 19.99
+    },
+    {
+      "id": "37da",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    },
+    {
+      "id": "e10f",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    },
+    {
+      "id": "0585",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    },
+    {
+      "id": "dc29",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    },
+    {
+      "id": "f0de",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    },
+    {
+      "id": "57b7",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    },
+    {
+      "id": "f935",
+      "productId": "3",
+      "quantity": 1,
+      "price": 14.99
+    }
+  ],
   "products": [
     {
       "id": "1",

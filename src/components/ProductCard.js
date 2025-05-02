@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { Card, Button, Badge } from "react-bootstrap";
+import api from "@/utils/api";
 
 const ProductCard = ({ product }) => {
   const handleAddToCart = async () => {
@@ -11,7 +12,8 @@ const ProductCard = ({ product }) => {
         quantity: 1,
         price: product.price,
       });
-      // Handle success
+      // Trigger cart update event
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
     } catch (err) {
       console.error("Error adding to cart:", err);
     }
@@ -73,7 +75,7 @@ const ProductCard = ({ product }) => {
           <Button
             variant="primary"
             className="mt-auto nav-hover-effect text-gradient border-1 bg-transparent"
-            onClick={() => console.log("Add to cart")}
+            onClick={handleAddToCart}
           >
             <span className="text-gradient">Add to Cart</span>
           </Button>

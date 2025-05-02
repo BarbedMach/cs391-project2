@@ -1,11 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar, Nav, Container, Badge } from "react-bootstrap";
 import { Cart, Shop } from "react-bootstrap-icons";
+import api from "@/utils/api";
 
 const NavigationBar = () => {
-  const [cartItemCount, setCartItemCount] = useState(300);
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await api.get("/shoppingcart");
+      const totalItems = response.data.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
+      setCartItemCount(totalItems);
+    } catch (err) {
+      console.error("Error fetching cart:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCartCount();
+
+    // Add event listener for cart updates
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
 
   return (
     <Navbar
