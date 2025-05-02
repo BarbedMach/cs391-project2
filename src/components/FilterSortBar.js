@@ -13,10 +13,10 @@ const FilterSortBar = ({
   categories,
 }) => {
   return (
-    <div className="mb-4 px-3">
-      <div className="d-flex flex-column flex-md-row gap-3">
+    <div className="mb-4 px-3 py-2">
+      <div className="d-flex flex-column flex-md-row gap-3 mt-1 mb-1">
         {/* Search Input */}
-        <InputGroup className="flex-grow-1">
+        <InputGroup className="flex-grow-1 border border-primary rounded">
           <Form.Control
             placeholder="Search products..."
             value={searchQuery}

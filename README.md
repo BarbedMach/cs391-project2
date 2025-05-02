@@ -3,13 +3,13 @@
 First, start the project:
 
 ```bash
-npm run start
+npm run all
 # or
-yarn start
+yarn all
 # or
-pnpm start
+pnpm all
 # or
-bun start
+bun all
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

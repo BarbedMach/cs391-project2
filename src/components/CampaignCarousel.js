@@ -34,7 +34,7 @@ const CampaignCarousel = ({ products }) => {
     <Carousel
       fade
       indicators={false}
-      className="mb-3 shadow-lg border border-primary nav-hover-effect"
+      className="mb-3 border border-primary rounded nav-hover-effect"
       interval={3000}
       style={{ height: "500px" }}
     >
