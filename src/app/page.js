@@ -7,7 +7,8 @@ import CampaignCarousel from "@/components/CampaignCarousel";
 import FilterSortBar from "@/components/FilterSortBar";
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,24 +17,17 @@ export default function Home() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchInitialData = async () => {
       try {
-        const params = {
-          q: searchQuery,
-          category: filterCategory,
-          _sort: sortOption?.split("_")[0],
-          _order: sortOption?.split("_")[1] || "asc",
-        };
+        // Fetch all products once for categories and carousel
+        const allResponse = await api.get("/products");
+        setAllProducts(allResponse.data);
+        setCategories(
+          [...new Set(allResponse.data.map((p) => p.category))].filter(Boolean)
+        );
 
-        const response = await api.get("/products", { params });
-
-        const allProducts = await api.get("/products");
-        const allCategories = [
-          ...new Set(allProducts.data.map((p) => p.category)),
-        ];
-
-        setCategories(allCategories);
-        setProducts(response.data);
+        // Initial filtered products
+        fetchFilteredProducts(allResponse.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -41,8 +35,44 @@ export default function Home() {
       }
     };
 
-    fetchProducts();
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    // Filter/Sort locally after initial load
+    if (allProducts.length > 0) {
+      fetchFilteredProducts(allProducts);
+    }
   }, [searchQuery, sortOption, filterCategory]);
+
+  const fetchFilteredProducts = (products) => {
+    let filtered = [...products];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply category filter
+    if (filterCategory) {
+      filtered = filtered.filter((p) => p.category === filterCategory);
+    }
+
+    // Apply sorting
+    if (sortOption) {
+      const [sortField, sortOrder] = sortOption.split("_");
+      filtered.sort((a, b) => {
+        if (sortOrder === "asc") return a[sortField] - b[sortField];
+        return b[sortField] - a[sortField];
+      });
+    }
+
+    setFilteredProducts(filtered);
+  };
 
   if (loading) return <div className="text-center py-5">Loading...</div>;
   if (error)
@@ -50,7 +80,7 @@ export default function Home() {
 
   return (
     <main className="py-4">
-      <CampaignCarousel products={products} />
+      <CampaignCarousel allProducts={allProducts} />
 
       <FilterSortBar
         searchQuery={searchQuery}
@@ -63,7 +93,7 @@ export default function Home() {
       />
 
       <Row xs={1} sm={2} md={3} lg={4} xl={5} className="g-4 px-3">
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <Col key={product.id}>
             <ProductCard product={product} />
           </Col>

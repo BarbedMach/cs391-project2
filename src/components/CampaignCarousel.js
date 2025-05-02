@@ -4,7 +4,7 @@ import { Carousel, Badge } from "react-bootstrap";
 import api from "@/utils/api";
 import ProductCard from "@/components/ProductCard";
 
-const CampaignCarousel = ({ products }) => {
+const CampaignCarousel = ({ allProducts }) => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,6 +23,7 @@ const CampaignCarousel = ({ products }) => {
 
     fetchCampaigns();
   }, []);
+
   if (loading)
     return <div className="text-center py-3">Loading campaigns...</div>;
   if (error)
@@ -37,7 +38,7 @@ const CampaignCarousel = ({ products }) => {
       style={{ height: "500px" }}
     >
       {campaigns.map((campaign) => {
-        const categoryProducts = products.filter(
+        const categoryProducts = allProducts.filter(
           (p) => p.category.toLowerCase() === campaign.category.toLowerCase()
         );
 
