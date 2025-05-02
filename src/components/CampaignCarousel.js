@@ -34,8 +34,9 @@ const CampaignCarousel = ({ products }) => {
     <Carousel
       fade
       indicators={false}
-      className="mb-3 shadow-lg"
+      className="mb-3 shadow-lg border border-primary nav-hover-effect"
       interval={3000}
+      style={{ height: "500px" }}
     >
       {campaigns.map((campaign) => {
         const categoryProducts = products.filter(
@@ -53,7 +54,7 @@ const CampaignCarousel = ({ products }) => {
                   Extra {campaign.extraDiscount}% Off
                 </Badge>
               </div>
-              <div className="d-flex flex-nowrap overflow-x-auto pb-3">
+              <div className="d-flex flex-nowrap overflow-x-auto p-2">
                 {categoryProducts.slice(0, 6).map((product) => (
                   <div
                     key={product.id}
