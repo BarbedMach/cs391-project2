@@ -1,5 +1,24 @@
 {
-  "campaigns": [],
+  "campaigns": [
+    {
+      "id": 1,
+      "title": "Beauty Extravaganza",
+      "category": "beauty",
+      "extraDiscount": 15
+    },
+    {
+      "id": 2,
+      "title": "Luxury Fragrances",
+      "category": "fragrances",
+      "extraDiscount": 20
+    },
+    {
+      "id": 3,
+      "title": "Smart Home Deals",
+      "category": "home-decoration",
+      "extraDiscount": 25
+    }
+  ],
   "shoppingcart": [],
   "products": [
     {

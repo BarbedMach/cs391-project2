@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "server": "json-server data/db.json --port 3001",
-    "start": "npm-run-all --parallel dev server",
+    "all": "npm-run-all --parallel dev server",
     "build": "next build",
     "start:prod": "next start",
     "lint": "next lint"

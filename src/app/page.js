@@ -2,6 +2,7 @@
 import { Row, Col } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/ProductCard";
+import CampaignCarousel from "@/components/CampaignCarousel";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -31,6 +32,7 @@ export default function Home() {
 
   return (
     <main className="py-4">
+      <CampaignCarousel products={products} />
       <Row xs={1} sm={2} md={3} lg={4} xl={5} className="g-4 px-3">
         {products.map((product) => (
           <Col key={product.id}>
