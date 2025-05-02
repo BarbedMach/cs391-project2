@@ -9365,6 +9365,12 @@
           "date": "2025-04-30T09:41:02.054Z",
           "reviewerName": "Julian James",
           "reviewerEmail": "julian.james@x.dummyjson.com"
+        },
+        {
+          "rating": 5,
+          "comment": "It was a great product",
+          "reviewerName": "Anonymous",
+          "date": "2025-05-02T19:21:34.377Z"
         }
       ],
       "returnPolicy": "90 days return policy",

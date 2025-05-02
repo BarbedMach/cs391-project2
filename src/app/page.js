@@ -49,26 +49,28 @@ export default function Home() {
   }, [searchQuery, sortOption, filterCategory, campaigns]);
 
   const fetchFilteredProducts = (products) => {
-    let filtered = [...products].map((product) => {
-      const applicableCampaign = campaigns.find(
-        (c) => c.category.toLowerCase() === product.category?.toLowerCase()
-      );
+    let filtered = [...products]
+      .filter((product) => product !== null) // First remove null products
+      .map((product) => {
+        const applicableCampaign = campaigns.find(
+          (c) => c.category?.toLowerCase() === product.category?.toLowerCase()
+        );
 
-      // Match ProductCard calculation
-      const originalPrice =
-        product.discountPercentage > 0
-          ? (product.price * 100) / (100 - product.discountPercentage)
-          : product.price;
+        // Match ProductCard calculation with null checks
+        const originalPrice =
+          product.discountPercentage > 0
+            ? (product.price * 100) / (100 - product.discountPercentage)
+            : product.price || 0;
 
-      const baseDiscount = product.discountPercentage || 0;
-      const campaignDiscount = applicableCampaign?.extraDiscount || 0;
-      const totalDiscount = Math.min(baseDiscount + campaignDiscount, 75);
+        const baseDiscount = product.discountPercentage || 0;
+        const campaignDiscount = applicableCampaign?.extraDiscount || 0;
+        const totalDiscount = Math.min(baseDiscount + campaignDiscount, 75);
 
-      return {
-        ...product,
-        calculatedPrice: (originalPrice * (100 - totalDiscount)) / 100,
-      };
-    });
+        return {
+          ...product,
+          calculatedPrice: (originalPrice * (100 - totalDiscount)) / 100,
+        };
+      });
 
     // Search filter
     if (searchQuery) {

@@ -1,8 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Card, Row, Col, Button, Badge, Form, Alert } from "react-bootstrap";
+import {
+  Card,
+  Row,
+  Col,
+  Button,
+  Badge,
+  Form,
+  Alert,
+  Modal,
+} from "react-bootstrap";
 import api from "@/utils/api";
+import { CartService } from "@/services/cartService";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -13,6 +23,13 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [success, setSuccess] = useState("");
   const [campaigns, setCampaigns] = useState([]);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [newReview, setNewReview] = useState({
+    comment: "",
+    rating: "",
+    username: "",
+  });
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,7 +41,6 @@ export default function ProductDetail() {
         setProduct(productResponse.data);
         setCampaigns(campaignsResponse.data);
 
-        // Check existing cart items
         const cartResponse = await api.get("/shoppingcart");
         const existingItem = cartResponse.data.find(
           (item) => item.productId === productResponse.data.id
@@ -44,21 +60,19 @@ export default function ProductDetail() {
     fetchData();
   }, [id]);
 
-  const applicableCampaign = campaigns.find(
-    (c) => c.category.toLowerCase() === product.category.toLowerCase()
-  );
-
+  const applicableCampaign = product?.category
+    ? campaigns.find(
+        (c) => c.category.toLowerCase() === product.category.toLowerCase()
+      )
+    : null;
   // Calculate discounts
-  const originalPrice =
-    product.discountPercentage > 0
-      ? (product.price * 100) / (100 - product.discountPercentage)
-      : product.price;
+  const baseDiscount = product?.discountPercentage || 0;
+  const campaignDiscount = applicableCampaign?.extraDiscount || 0;
+  const totalDiscount = Math.min(baseDiscount + campaignDiscount, 75);
 
-  let totalDiscount = product.discountPercentage;
-  if (applicableCampaign) {
-    totalDiscount += Number(applicableCampaign.extraDiscount);
-    totalDiscount = Math.min(totalDiscount, 75);
-  }
+  const originalPrice = product?.price
+    ? (product.price * 100) / (100 - baseDiscount)
+    : 0;
 
   const campaignPrice = (originalPrice * (100 - totalDiscount)) / 100;
 
@@ -95,6 +109,42 @@ export default function ProductDetail() {
   if (error)
     return <div className="text-center py-5 text-danger">Error: {error}</div>;
 
+  const handleShowReviewModal = () => setShowReviewModal(true);
+  const handleCloseReviewModal = () => {
+    setShowReviewModal(false);
+    setReviewError("");
+    setNewReview({ comment: "", rating: "", username: "" });
+  };
+
+  const handleSubmitReview = async () => {
+    try {
+      if (!newReview.comment || !newReview.rating) {
+        setReviewError("Comment and rating are required");
+        return;
+      }
+
+      const reviewToSubmit = {
+        rating: parseInt(newReview.rating),
+        comment: newReview.comment,
+        reviewerName: newReview.username || "Anonymous",
+        date: new Date().toISOString(),
+      };
+
+      // Update product with new review
+      const updatedProduct = {
+        ...product,
+        reviews: [...product.reviews, reviewToSubmit],
+      };
+
+      const response = await api.put(`/products/${product.id}`, updatedProduct);
+      setProduct(response.data);
+      handleCloseReviewModal();
+    } catch (err) {
+      setReviewError("Failed to submit review. Please try again.");
+      console.error("Review submission error:", err);
+    }
+  };
+
   return (
     <div className="container py-3">
       {success && <Alert variant="success">{success}</Alert>}
@@ -121,7 +171,16 @@ export default function ProductDetail() {
             <div className="flex-grow-1">
               <h1 className="text-gradient mb-3">{product.title}</h1>
               <div className="d-flex align-items-center mb-3">
-                <h2 className="text-primary me-3">${finalPrice.toFixed(2)}</h2>
+                <span className="fs-4 fw-bold text-gradient">
+                  $
+                  {applicableCampaign
+                    ? campaignPrice.toFixed(2)
+                    : product.price.toFixed(2)}
+                </span>
+                <span className="text-muted text-decoration-line-through ms-2 me-3">
+                  ${originalPrice.toFixed(2)}
+                </span>
+
                 <Badge bg="danger" pill className="fs-5">
                   {totalDiscount}% OFF
                   {applicableCampaign &&
@@ -169,7 +228,81 @@ export default function ProductDetail() {
         </Col>
       </Row>
 
-      {/* Reviews Section */}
+      {/* Add Review Button */}
+      <Row className="mt-4">
+        <Col xs={12} className="mb-3">
+          <Button
+            variant="primary"
+            onClick={handleShowReviewModal}
+            className="nav-hover-effect w-100"
+          >
+            Write a Review
+          </Button>
+        </Col>
+      </Row>
+
+      {/* Review Modal */}
+      <Modal show={showReviewModal} onHide={handleCloseReviewModal}>
+        <Modal.Header closeButton>
+          <Modal.Title className="text-gradient">Write a Review</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {reviewError && <Alert variant="danger">{reviewError}</Alert>}
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Rating *</Form.Label>
+              <Form.Select
+                value={newReview.rating}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, rating: e.target.value })
+                }
+                required
+              >
+                <option value="">Select Rating</option>
+                {[5, 4, 3, 2, 1].map((num) => (
+                  <option key={num} value={num}>
+                    {num} Stars
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Comment *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={newReview.comment}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, comment: e.target.value })
+                }
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Username (optional)</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Anonymous"
+                value={newReview.username}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, username: e.target.value })
+                }
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseReviewModal}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleSubmitReview}>
+            Submit Review
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       <Row className="mt-4">
         <Col xs={12}>
           <h4 className="text-gradient mb-3">Customer Reviews</h4>
