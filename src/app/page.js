@@ -26,9 +26,11 @@ export default function Home() {
         };
 
         const response = await api.get("/products", { params });
+
+        const allProducts = await api.get("/products");
         const allCategories = [
-          ...new Set(response.data.map((p) => p.category)),
-        ].filter(Boolean);
+          ...new Set(allProducts.data.map((p) => p.category)),
+        ];
 
         setCategories(allCategories);
         setProducts(response.data);
