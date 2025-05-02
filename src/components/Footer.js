@@ -1,10 +1,9 @@
 import React from "react";
 import { Container, Row, Col } from "react-bootstrap";
-import { Github, Linkedin } from "react-bootstrap-icons";
 
 function Footer() {
   return (
-    <footer className="bg-dark text-white pt-4 pb-3 mt-auto border-top border-primary border-3">
+    <footer className="footer fixed-bottom bg-dark text-white pt-4 pb-3 mt-auto border-top border-primary border-3">
       <Container>
         <Row className="mb-1 g-4">
           <Col md={6}>

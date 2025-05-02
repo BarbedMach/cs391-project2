@@ -3,10 +3,9 @@
 import React, { useState } from "react";
 import { Navbar, Nav, Container, Badge } from "react-bootstrap";
 import { Cart, Shop } from "react-bootstrap-icons";
-import Link from "next/link";
 
 const NavigationBar = () => {
-  const [cartItemCount, setCartItemCount] = useState(3);
+  const [cartItemCount, setCartItemCount] = useState(300);
 
   return (
     <Navbar
@@ -16,11 +15,14 @@ const NavigationBar = () => {
       sticky="top"
       className="border-bottom border-primary border-3"
     >
-      <Container fluid className="px-4">
-        {/* Brand Logo with Icon */}
-        <Navbar.Brand className="me-auto d-flex align-items-center">
-          <Shop size={28} className="text-primary me-2" />
-          <span className="text-gradient fs-3 fw-bold">FS Shop</span>
+      <Container className="px-4">
+        <Navbar.Brand className="me-auto">
+          <Nav.Link href="/" className="d-flex align-items-center">
+            <Shop size={28} className="text-primary m-2" />
+            <span className="text-gradient fs-2 fw-bold text-center">
+              FS Shop
+            </span>
+          </Nav.Link>
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0">
@@ -44,25 +46,23 @@ const NavigationBar = () => {
             </Nav.Link>
           </Nav>
 
-          {/* Cart with animated badge */}
           <Nav>
-            <Link href="/cart" passHref>
-              <Nav.Link className="position-relative mx-2 px-3 py-2 rounded-pill nav-hover-effect">
-                <Cart size={18} />
-                <Badge
-                  bg="danger"
-                  pill
-                  className="position-absolute top-25 start-100 translate-middle p-2 border border-2 border-dark"
-                  style={{
-                    fontSize: "0.6rem",
-                    animation:
-                      cartItemCount > 0 ? "pulse 1.5s infinite" : "none",
-                  }}
-                >
-                  {cartItemCount}
-                </Badge>
-              </Nav.Link>
-            </Link>
+            <Nav.Link
+              href="/cart"
+              className="position-relative mx-2 px-3 py-2 rounded-pill nav-hover-effect"
+            >
+              <Cart size={18} />
+              <Badge
+                bg="danger"
+                pill
+                className="position-absolute top-25 start-100 translate-middle p-2 border border-2 border-dark"
+                style={{
+                  fontSize: "0.6rem",
+                }}
+              >
+                {cartItemCount}
+              </Badge>
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>

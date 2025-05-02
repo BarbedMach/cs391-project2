@@ -1,4 +1,4 @@
-import "./globals.css";
+import "@/app/globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container } from "react-bootstrap";
 import Footer from "@/components/Footer";
@@ -13,9 +13,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="d-flex flex-column min-vh-100">
         <NavigationBar />
-        <Container fluid className="flex-grow-1 px-0">
-          {children}
-        </Container>
+        <Container className="flex-grow-1 px-0">{children}</Container>
         <Footer />
       </body>
     </html>
