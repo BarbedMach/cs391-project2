@@ -25,9 +25,9 @@ const ProductCard = ({ product }) => {
   ).toFixed(2);
 
   return (
-    <Link href={`/products/${product.id}`} className="text-decoration-none">
-      <Card className="h-100 shadow-sm border-primary border-2 nav-hover-effect">
-        <div className="position-relative">
+    <Card className="h-100 shadow-sm border-primary border-2 nav-hover-effect">
+      <div className="position-relative">
+        <Link href={`/products/${product.id}`} className="text-decoration-none">
           <Card.Img
             variant="top"
             src={product.images[0]}
@@ -42,9 +42,11 @@ const ProductCard = ({ product }) => {
               {product.discountPercentage}% OFF
             </Badge>
           )}
-        </div>
+        </Link>
+      </div>
 
-        <Card.Body className="d-flex flex-column">
+      <Card.Body className="d-flex flex-column">
+        <Link href={`/products/${product.id}`} className="text-decoration-none">
           <Card.Title className="text-gradient text-center mb-auto">
             {product.title}
           </Card.Title>
@@ -71,17 +73,21 @@ const ProductCard = ({ product }) => {
             ))}
             <span className=" text-muted">({product.rating})</span>
           </div>
-
-          <Button
-            variant="primary"
-            className="mt-auto nav-hover-effect text-gradient border-1 bg-transparent"
-            onClick={handleAddToCart}
-          >
-            <span className="text-gradient">Add to Cart</span>
-          </Button>
-        </Card.Body>
-      </Card>
-    </Link>
+        </Link>
+      </Card.Body>
+      <Button
+        variant="primary"
+        className="m-2 nav-hover-effect text-gradient border-1 bg-transparent"
+        onClick={handleAddToCart}
+        style={{ cursor: "pointer" }}
+        onMouseEnter={(e) => {
+          e.stopPropagation();
+          e.currentTarget.style.cursor = "pointer";
+        }}
+      >
+        <span className="text-gradient">Add to Cart</span>
+      </Button>
+    </Card>
   );
 };
 
