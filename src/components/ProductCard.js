@@ -98,6 +98,35 @@ const ProductCard = ({ product, campaigns = [] }) => {
               ${originalPrice.toFixed(2)}
             </span>
           </div>
+
+          {/* Star Rating Display */}
+          <div className="d-flex justify-content-center align-items-center mt-2">
+            {[...Array(5)].map((_, i) => {
+              const fillPercentage =
+                Math.max(0, Math.min(1, product.rating - i)) * 100;
+              return (
+                <span
+                  key={i}
+                  className="position-relative"
+                  style={{ display: "inline-block" }}
+                >
+                  <span className="text-muted">★</span>
+                  <span
+                    className="position-absolute start-0 top-0 overflow-hidden"
+                    style={{
+                      width: `${fillPercentage}%`,
+                      color: "#ffd700",
+                    }}
+                  >
+                    ★
+                  </span>
+                </span>
+              );
+            })}
+            <span className="ms-2 text-muted">
+              ({product.rating.toFixed(1)})
+            </span>
+          </div>
         </Link>
       </Card.Body>
       <Button

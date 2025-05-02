@@ -123,6 +123,12 @@ export default function ProductDetail() {
         return;
       }
 
+      const ratingValue = parseInt(newReview.rating);
+      if (ratingValue < 0 || ratingValue > 5) {
+        setReviewError("Rating must be between 0 and 5");
+        return;
+      }
+
       const reviewToSubmit = {
         rating: parseInt(newReview.rating),
         comment: newReview.comment,
@@ -130,10 +136,16 @@ export default function ProductDetail() {
         date: new Date().toISOString(),
       };
 
+      const updatedReviews = [...product.reviews, reviewToSubmit];
+      const newRating =
+        updatedReviews.reduce((sum, review) => sum + review.rating, 0) /
+        updatedReviews.length;
+
       // Update product with new review
       const updatedProduct = {
         ...product,
         reviews: [...product.reviews, reviewToSubmit],
+        rating: Number(newRating.toFixed(2)),
       };
 
       const response = await api.put(`/products/${product.id}`, updatedProduct);
@@ -171,7 +183,7 @@ export default function ProductDetail() {
             <div className="flex-grow-1">
               <h1 className="text-gradient mb-3">{product.title}</h1>
               <div className="d-flex align-items-center mb-3">
-                <span className="fs-4 fw-bold text-gradient">
+                <span className="fs-1 fw-bold text-gradient">
                   $
                   {applicableCampaign
                     ? campaignPrice.toFixed(2)
@@ -182,7 +194,7 @@ export default function ProductDetail() {
                 </span>
 
                 <Badge bg="danger" pill className="fs-5">
-                  {totalDiscount}% OFF
+                  {totalDiscount.toFixed(2)}% OFF
                   {applicableCampaign &&
                     ` (${baseDiscount}% + ${campaignDiscount}%)`}
                 </Badge>
@@ -251,22 +263,32 @@ export default function ProductDetail() {
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Rating *</Form.Label>
-              <Form.Select
-                value={newReview.rating}
-                onChange={(e) =>
-                  setNewReview({ ...newReview, rating: e.target.value })
-                }
-                required
-              >
-                <option value="">Select Rating</option>
-                {[5, 4, 3, 2, 1].map((num) => (
-                  <option key={num} value={num}>
-                    {num} Stars
-                  </option>
+              <div className="d-flex align-items-center">
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <Button
+                    key={num}
+                    variant="link"
+                    className="p-0 me-1"
+                    onClick={() =>
+                      setNewReview({ ...newReview, rating: num.toString() })
+                    }
+                  >
+                    <span
+                      className={`fs-3 ${
+                        num <= newReview.rating ? "text-warning" : "text-muted"
+                      }`}
+                    >
+                      ★
+                    </span>
+                  </Button>
                 ))}
-              </Form.Select>
+                <span className="ms-3">
+                  {newReview.rating ? `${newReview.rating}/5` : "Select rating"}
+                </span>
+              </div>
             </Form.Group>
 
+            {/* Keep existing comment and username fields */}
             <Form.Group className="mb-3">
               <Form.Label>Comment *</Form.Label>
               <Form.Control
