@@ -12,13 +12,17 @@ export default function ProductDetail() {
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [success, setSuccess] = useState("");
+  const [campaigns, setCampaigns] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch product details
-        const productResponse = await api.get(`/products/${id}`);
+        const [productResponse, campaignsResponse] = await Promise.all([
+          api.get(`/products/${id}`),
+          api.get("/campaigns"),
+        ]);
         setProduct(productResponse.data);
+        setCampaigns(campaignsResponse.data);
 
         // Check existing cart items
         const cartResponse = await api.get("/shoppingcart");
@@ -40,30 +44,50 @@ export default function ProductDetail() {
     fetchData();
   }, [id]);
 
+  const applicableCampaign = campaigns.find(
+    (c) => c.category.toLowerCase() === product.category.toLowerCase()
+  );
+
+  // Calculate discounts
+  const originalPrice =
+    product.discountPercentage > 0
+      ? (product.price * 100) / (100 - product.discountPercentage)
+      : product.price;
+
+  let totalDiscount = product.discountPercentage;
+  if (applicableCampaign) {
+    totalDiscount += Number(applicableCampaign.extraDiscount);
+    totalDiscount = Math.min(totalDiscount, 75);
+  }
+
+  const campaignPrice = (originalPrice * (100 - totalDiscount)) / 100;
+
   const handleAddToCart = async () => {
     try {
-      if (cartItem) {
-        await api.put(`/shoppingcart/${cartItem.id}`, {
-          ...cartItem,
-          quantity: quantity,
-          // Maintain all required fields
-          productId: product.id,
-          title: product.title,
-          image: product.images[0], // Fix inconsistent image source
-          price: product.price,
-        });
+      const priceToUse = applicableCampaign ? campaignPrice : product.price;
+
+      const cartResponse = await CartService.getCart();
+      const existingItem = cartResponse.data.find(
+        (item) => item.productId === product.id
+      );
+
+      if (existingItem) {
+        await CartService.updateQuantity(
+          existingItem.id,
+          existingItem.quantity + 1
+        );
       } else {
-        await api.post("/shoppingcart", {
+        await CartService.addToCart({
           productId: product.id,
           title: product.title,
-          image: product.images[0], // Changed from thumbnail to images[0]
-          price: product.price,
-          quantity: quantity,
+          image: product.images[0],
+          price: priceToUse,
+          quantity: 1,
         });
       }
       window.dispatchEvent(new CustomEvent("cartUpdated"));
     } catch (err) {
-      console.error("Cart error:", err);
+      console.error("Error adding to cart:", err);
     }
   };
 
@@ -97,12 +121,12 @@ export default function ProductDetail() {
             <div className="flex-grow-1">
               <h1 className="text-gradient mb-3">{product.title}</h1>
               <div className="d-flex align-items-center mb-3">
-                <h2 className="text-primary me-3">${product.price}</h2>
-                {product.discountPercentage > 0 && (
-                  <Badge bg="danger" pill className="fs-5">
-                    {product.discountPercentage}% OFF
-                  </Badge>
-                )}
+                <h2 className="text-primary me-3">${finalPrice.toFixed(2)}</h2>
+                <Badge bg="danger" pill className="fs-5">
+                  {totalDiscount}% OFF
+                  {applicableCampaign &&
+                    ` (${baseDiscount}% + ${campaignDiscount}%)`}
+                </Badge>
               </div>
 
               <Card.Text className="fs-5 mb-4">{product.description}</Card.Text>

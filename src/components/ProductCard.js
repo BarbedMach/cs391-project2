@@ -4,10 +4,30 @@ import Link from "next/link";
 import { Card, Button, Badge } from "react-bootstrap";
 import { CartService } from "@/services/cartService";
 
-const ProductCard = ({ product }) => {
-  // ProductCard.js (updated handleAddToCart)
+const ProductCard = ({ product, campaigns = [] }) => {
+  // Find applicable campaign
+  const applicableCampaign = campaigns.find(
+    (c) => c.category.toLowerCase() === product.category.toLowerCase()
+  );
+
+  // Calculate discounts
+  const originalPrice =
+    product.discountPercentage > 0
+      ? (product.price * 100) / (100 - product.discountPercentage)
+      : product.price;
+
+  let totalDiscount = product.discountPercentage;
+  if (applicableCampaign) {
+    totalDiscount += Number(applicableCampaign.extraDiscount);
+    totalDiscount = Math.min(totalDiscount, 75);
+  }
+
+  const campaignPrice = (originalPrice * (100 - totalDiscount)) / 100;
+
   const handleAddToCart = async () => {
     try {
+      const priceToUse = applicableCampaign ? campaignPrice : product.price;
+
       const cartResponse = await CartService.getCart();
       const existingItem = cartResponse.data.find(
         (item) => item.productId === product.id
@@ -22,8 +42,8 @@ const ProductCard = ({ product }) => {
         await CartService.addToCart({
           productId: product.id,
           title: product.title,
-          image: product.images[0], // Ensure consistent image field
-          price: product.price,
+          image: product.images[0],
+          price: priceToUse,
           quantity: 1,
         });
       }
@@ -32,11 +52,6 @@ const ProductCard = ({ product }) => {
       console.error("Error adding to cart:", err);
     }
   };
-
-  const originalPrice = (
-    (product.price * 100) /
-    (100 - product.discountPercentage)
-  ).toFixed(2);
 
   return (
     <Card className="h-100 shadow-sm border-primary border-2 nav-hover-effect">
@@ -47,13 +62,17 @@ const ProductCard = ({ product }) => {
             src={product.images[0]}
             style={{ height: "160px", objectFit: "cover" }}
           />
-          {product.discountPercentage > 0 && (
+          {totalDiscount > 0 && (
             <Badge
               bg="danger"
               pill
               className="position-absolute top-0 start-0 m-2 p-2 border border-2 border-white"
             >
-              {product.discountPercentage}% OFF
+              {totalDiscount.toFixed(2)}% OFF
+              {applicableCampaign &&
+                ` (${product.discountPercentage}% + ${
+                  applicableCampaign ? applicableCampaign.extraDiscount : 0
+                }%)`}
             </Badge>
           )}
         </Link>
@@ -66,26 +85,15 @@ const ProductCard = ({ product }) => {
           </Card.Title>
 
           <div className="mb-auto text-center">
-            <span className="fs-4 fw-bold">${product.price}</span>
-            {product.discountPercentage > 0 && (
-              <span className="text-muted text-decoration-line-through ms-2">
-                ${originalPrice}
-              </span>
-            )}
-          </div>
-
-          <div className="justify-content-center d-flex align-items-center mb-auto">
-            {[...Array(5)].map((_, i) => (
-              <span
-                key={i}
-                className={`fs-5 ${
-                  i < Math.floor(product.rating) ? "text-warning" : "text-muted"
-                }`}
-              >
-                ★
-              </span>
-            ))}
-            <span className=" text-muted">({product.rating})</span>
+            <span className="fs-4 fw-bold">
+              $
+              {applicableCampaign
+                ? campaignPrice.toFixed(2)
+                : product.price.toFixed(2)}
+            </span>
+            <span className="text-muted text-decoration-line-through ms-2">
+              ${originalPrice.toFixed(2)}
+            </span>
           </div>
         </Link>
       </Card.Body>

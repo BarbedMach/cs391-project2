@@ -54,17 +54,16 @@ const CampaignCarousel = ({ allProducts }) => {
                 </Badge>
               </div>
               <div className="d-flex flex-nowrap overflow-x-auto p-2">
-                {categoryProducts.slice(0, 6).map((product) => (
+                {categoryProducts.map((product) => (
                   <div
                     key={product.id}
                     className="me-4"
                     style={{ minWidth: "300px" }}
                   >
                     <ProductCard
+                      key={product.id}
                       product={product}
-                      discount={
-                        product.discountPercentage + campaign.extraDiscount
-                      }
+                      campaigns={[campaign]}
                     />
                   </div>
                 ))}

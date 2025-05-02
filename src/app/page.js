@@ -15,26 +15,29 @@ export default function Home() {
   const [sortOption, setSortOption] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [categories, setCategories] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch all products once for categories and carousel
-        const allResponse = await api.get("/products");
-        setAllProducts(allResponse.data);
+        const [productsResponse, campaignsResponse] = await Promise.all([
+          api.get("/products"),
+          api.get("/campaigns"),
+        ]);
+        setAllProducts(productsResponse.data);
+        setCampaigns(campaignsResponse.data);
         setCategories(
-          [...new Set(allResponse.data.map((p) => p.category))].filter(Boolean)
+          [...new Set(productsResponse.data.map((p) => p.category))].filter(
+            Boolean
+          )
         );
-
-        // Initial filtered products
-        fetchFilteredProducts(allResponse.data);
+        fetchFilteredProducts(productsResponse.data);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchInitialData();
   }, []);
 
@@ -85,7 +88,7 @@ export default function Home() {
 
   return (
     <main className="py-4">
-      <CampaignCarousel allProducts={allProducts} />
+      <CampaignCarousel allProducts={allProducts} campaigns={campaigns} />
 
       <FilterSortBar
         searchQuery={searchQuery}
@@ -100,7 +103,7 @@ export default function Home() {
       <Row xs={1} sm={2} md={3} lg={4} xl={5} className="g-4 px-3">
         {filteredProducts.map((product) => (
           <Col key={product.id}>
-            <ProductCard product={product} />
+            <ProductCard product={product} campaigns={campaigns} />
           </Col>
         ))}
       </Row>
