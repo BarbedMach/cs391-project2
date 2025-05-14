@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation"; // Import useRouter
 import {
   Card,
   Row,
@@ -16,6 +16,7 @@ import { CartService } from "@/services/cartService";
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const router = useRouter(); // Initialize useRouter
   const [product, setProduct] = useState(null);
   const [cartItem, setCartItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,7 @@ export default function ProductDetail() {
   const [campaigns, setCampaigns] = useState([]);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [newReview, setNewReview] = useState({
+    title: "",
     comment: "",
     rating: "",
     username: "",
@@ -33,141 +35,207 @@ export default function ProductDetail() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) return; // Ensure id is available
+      setLoading(true);
+      setError(null);
       try {
-        const [productResponse, campaignsResponse] = await Promise.all([
-          api.get(`/products/${id}`),
-          api.get("/campaigns"),
-        ]);
-        setProduct(productResponse.data);
+        const [productResponse, campaignsResponse, cartResponse] =
+          await Promise.all([
+            api.get(`/products/${id}`),
+            api.get("/campaigns"),
+            CartService.getCart(), // Fetch current cart
+          ]);
+
+        const fetchedProduct = productResponse.data;
+        setProduct(fetchedProduct);
         setCampaigns(campaignsResponse.data);
 
-        const cartResponse = await api.get("/shoppingcart");
-        const existingItem = cartResponse.data.find(
-          (item) => item.productId === productResponse.data.id
+        const existingItemInCart = cartResponse.data.find(
+          (item) => item.productId === fetchedProduct.id
         );
 
-        if (existingItem) {
-          setCartItem(existingItem);
-          setQuantity(existingItem.quantity);
+        if (existingItemInCart) {
+          setCartItem(existingItemInCart);
+          setQuantity(existingItemInCart.quantity); // set quantity from cart if item exists
+        } else {
+          setCartItem(null);
+          setQuantity(1); // reset to 1 if not in cart
         }
       } catch (err) {
-        setError(err.message);
+        setError(err.message || "Failed to fetch product details.");
+        console.error("Fetch data error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [id]);
+  }, [id]); // Rerun when id changes
 
   const applicableCampaign = product?.category
     ? campaigns.find(
         (c) => c.category.toLowerCase() === product.category.toLowerCase()
       )
     : null;
-  // Calculate discounts
+
   const baseDiscount = product?.discountPercentage || 0;
   const campaignDiscount = applicableCampaign?.extraDiscount || 0;
-  const totalDiscount = Math.min(baseDiscount + campaignDiscount, 75);
+  const totalDiscount = Math.min(
+    parseFloat(baseDiscount) + parseFloat(campaignDiscount),
+    75
+  ); // Ensure numbers
 
   const originalPrice = product?.price
     ? (product.price * 100) / (100 - baseDiscount)
     : 0;
 
-  const campaignPrice = (originalPrice * (100 - totalDiscount)) / 100;
+  const finalPrice = product?.price
+    ? (originalPrice * (100 - totalDiscount)) / 100
+    : 0;
 
-  const handleAddToCart = async () => {
+  const handleAddToCartOrUpdate = async () => {
+    if (!product) return;
+    if (quantity < 1) {
+      setError("Quantity must be at least 1.");
+      return;
+    }
+    setError(null);
+    setSuccess("");
+
     try {
-      const priceToUse = applicableCampaign ? campaignPrice : product.price;
+      const priceToUse = finalPrice; // calculated final price
 
-      const cartResponse = await CartService.getCart();
-      const existingItem = cartResponse.data.find(
+      const currentCart = await CartService.getCart();
+      const existingItemData = currentCart.data.find(
         (item) => item.productId === product.id
       );
 
-      if (existingItem) {
-        await CartService.updateQuantity(
-          existingItem.id,
-          existingItem.quantity + 1
-        );
+      if (existingItemData) {
+        // item exists, update its quantity and potentially price/note
+        await CartService.updateItemInCart(existingItemData.id, {
+          ...existingItemData, // Preserve other fields like note
+          quantity: parseInt(quantity, 10),
+          price: priceToUse, // Update price in case campaign changed
+        });
+        setSuccess("Cart updated successfully!");
       } else {
+        // Item does not exist, add new
         await CartService.addToCart({
           productId: product.id,
           title: product.title,
-          image: product.images[0],
+          image: product.images?.[0] || "/placeholder.jpg", // Fallback image
           price: priceToUse,
-          quantity: 1,
+          quantity: parseInt(quantity, 10),
+          note: "", // Initialize note for new item
         });
+        setSuccess("Product added to cart!");
       }
-      window.dispatchEvent(new CustomEvent("cartUpdated"));
+      window.dispatchEvent(new CustomEvent("cartUpdated")); // Notify other components
+
+      // Refresh cartItem state for this page
+      const updatedCartResponse = await CartService.getCart();
+      const updatedExistingItem = updatedCartResponse.data.find(
+        (item) => item.productId === product.id
+      );
+      setCartItem(updatedExistingItem || null);
+      if (updatedExistingItem) {
+        setQuantity(updatedExistingItem.quantity);
+      }
     } catch (err) {
-      console.error("Error adding to cart:", err);
+      console.error("Error updating/adding to cart:", err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to update cart. Please try again."
+      );
     }
   };
-
-  if (loading) return <div className="text-center py-3">Loading...</div>;
-  if (error)
-    return <div className="text-center py-5 text-danger">Error: {error}</div>;
 
   const handleShowReviewModal = () => setShowReviewModal(true);
   const handleCloseReviewModal = () => {
     setShowReviewModal(false);
     setReviewError("");
-    setNewReview({ comment: "", rating: "", username: "" });
+    setNewReview({ title: "", comment: "", rating: "", username: "" }); // Reset form
   };
 
   const handleSubmitReview = async () => {
+    if (!product) return;
     try {
-      if (!newReview.comment || !newReview.rating) {
-        setReviewError("Comment and rating are required");
+      // Validate review title
+      if (!newReview.title.trim()) {
+        setReviewError("Review title is required.");
+        return;
+      }
+      if (!newReview.comment.trim()) {
+        setReviewError("Comment is required.");
+        return;
+      }
+      if (!newReview.rating) {
+        setReviewError("Rating is required.");
         return;
       }
 
-      const ratingValue = parseInt(newReview.rating);
-      if (ratingValue < 0 || ratingValue > 5) {
-        setReviewError("Rating must be between 0 and 5");
+      const ratingValue = parseInt(newReview.rating, 10);
+      if (isNaN(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+        setReviewError("Rating must be between 1 and 5.");
         return;
       }
+      setReviewError(""); // Clear previous errors
 
       const reviewToSubmit = {
-        rating: parseInt(newReview.rating),
-        comment: newReview.comment,
-        reviewerName: newReview.username || "Anonymous",
+        title: newReview.title.trim(), // Add title
+        rating: ratingValue,
+        comment: newReview.comment.trim(),
+        reviewerName: newReview.username.trim() || "Anonymous",
         date: new Date().toISOString(),
       };
 
-      const updatedReviews = [...product.reviews, reviewToSubmit];
-      const newRating =
+      const updatedReviews = [...(product.reviews || []), reviewToSubmit];
+      const newAverageRating =
         updatedReviews.reduce((sum, review) => sum + review.rating, 0) /
         updatedReviews.length;
 
-      // Update product with new review
       const updatedProduct = {
         ...product,
-        reviews: [...product.reviews, reviewToSubmit],
-        rating: Number(newRating.toFixed(2)),
+        reviews: updatedReviews,
+        rating: parseFloat(newAverageRating.toFixed(2)),
       };
 
       const response = await api.put(`/products/${product.id}`, updatedProduct);
-      setProduct(response.data);
+      setProduct(response.data); // Update local product state with new review and rating
       handleCloseReviewModal();
+      setSuccess("Review submitted successfully!");
     } catch (err) {
       setReviewError("Failed to submit review. Please try again.");
       console.error("Review submission error:", err);
     }
   };
 
+  if (loading) return <div className="text-center py-3">Loading...</div>;
+  if (error && !product)
+    return (
+      <Alert variant="danger" className="m-3">
+        Error loading product: {error}
+      </Alert>
+    );
+  if (!product)
+    return (
+      <Alert variant="warning" className="m-3">
+        Product not found.
+      </Alert>
+    );
+
   return (
     <div className="container py-3">
       {success && <Alert variant="success">{success}</Alert>}
+      {error && <Alert variant="danger">{error}</Alert>}
 
       <Row className="g-4">
-        {/* Product Image */}
         <Col md={6}>
           <Card className="border-primary border-2 h-100">
             <Card.Img
               variant="top"
-              src={product.images[0]}
+              src={product.images?.[0] || "/placeholder.jpg"} // Fallback image
+              alt={product.title}
               style={{
                 maxHeight: "500px",
                 objectFit: "contain",
@@ -177,30 +245,31 @@ export default function ProductDetail() {
           </Card>
         </Col>
 
-        {/* Product Details */}
         <Col md={6}>
           <Card className="border-primary border-2 h-100 p-3 d-flex flex-column">
             <div className="flex-grow-1">
               <h1 className="text-gradient mb-3">{product.title}</h1>
               <div className="d-flex align-items-center mb-3">
                 <span className="fs-1 fw-bold text-gradient">
-                  $
-                  {applicableCampaign
-                    ? campaignPrice.toFixed(2)
-                    : product.price.toFixed(2)}
+                  ${finalPrice.toFixed(2)}
                 </span>
-                <span className="text-muted text-decoration-line-through ms-2 me-3">
-                  ${originalPrice.toFixed(2)}
-                </span>
-
-                <Badge bg="danger" pill className="fs-5">
-                  {totalDiscount.toFixed(2)}% OFF
-                  {applicableCampaign &&
-                    ` (${baseDiscount}% + ${campaignDiscount}%)`}
-                </Badge>
+                {totalDiscount > 0 && (
+                  <span className="text-muted text-decoration-line-through ms-2 me-3">
+                    ${originalPrice.toFixed(2)}
+                  </span>
+                )}
+                {totalDiscount > 0 && (
+                  <Badge bg="danger" pill className="fs-5">
+                    {totalDiscount.toFixed(2)}% OFF
+                    {applicableCampaign &&
+                      ` (${baseDiscount}% + ${campaignDiscount}%)`}
+                  </Badge>
+                )}
               </div>
 
-              <Card.Text className="fs-5 mb-4">{product.description}</Card.Text>
+              <Card.Text className="fs-5 mb-4">
+                {product.description}
+              </Card.Text>
 
               <div className="mb-4">
                 <h4 className="text-gradient">Product Details</h4>
@@ -214,53 +283,87 @@ export default function ProductDetail() {
                   <li>
                     <strong>Stock:</strong> {product.stock}
                   </li>
+                  <li>
+                    <strong>Rating:</strong> {product.rating?.toFixed(1)} / 5
+                  </li>
                 </ul>
               </div>
             </div>
 
-            {/* Quantity and Add to Cart */}
             <div className="mt-auto">
-              <Form.Control
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, e.target.value))}
-                className="mb-3"
-              />
+              <Form.Group className="mb-3">
+                <Form.Label>Quantity:</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) =>
+                    setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))
+                  }
+                  className="mb-3"
+                />
+              </Form.Group>
               <Button
                 variant="primary"
                 size="lg"
-                className="nav-hover-effect w-100"
-                onClick={handleAddToCart}
+                className="nav-hover-effect w-100 mb-2"
+                onClick={handleAddToCartOrUpdate}
+                disabled={product.stock === 0}
               >
-                {cartItem ? "Update Cart" : "Add to Cart"}
+                {product.stock === 0
+                  ? "Out of Stock"
+                  : cartItem
+                  ? "Update Quantity in Cart"
+                  : "Add to Cart"}
+              </Button>
+              <Button
+                variant="outline-secondary"
+                size="lg"
+                className="w-100"
+                onClick={() => router.push("/cart")}
+              >
+                Go to Cart
               </Button>
             </div>
           </Card>
         </Col>
       </Row>
 
-      {/* Add Review Button */}
       <Row className="mt-4">
         <Col xs={12} className="mb-3">
           <Button
-            variant="primary"
+            variant="outline-primary"
             onClick={handleShowReviewModal}
             className="nav-hover-effect w-100"
           >
-            Write a Review
+            Write a Review for {product.title}
           </Button>
         </Col>
       </Row>
 
-      {/* Review Modal */}
       <Modal show={showReviewModal} onHide={handleCloseReviewModal}>
-        <Modal.Header closeButton>
-          <Modal.Title className="text-gradient">Write a Review</Modal.Title>
+        <Modal.Header closeButton className="border-primary">
+          <Modal.Title className="text-gradient">
+            Write a Review for {product.title}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {reviewError && <Alert variant="danger">{reviewError}</Alert>}
           <Form>
+            {/* review title input */}
+            <Form.Group className="mb-3">
+              <Form.Label>Review Title *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g., Great product!"
+                value={newReview.title}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, title: e.target.value })
+                }
+                required
+              />
+            </Form.Group>
+
             <Form.Group className="mb-3">
               <Form.Label>Rating *</Form.Label>
               <div className="d-flex align-items-center">
@@ -275,7 +378,9 @@ export default function ProductDetail() {
                   >
                     <span
                       className={`fs-3 ${
-                        num <= newReview.rating ? "text-warning" : "text-muted"
+                        num <= parseInt(newReview.rating, 10)
+                          ? "text-warning"
+                          : "text-muted"
                       }`}
                     >
                       ★
@@ -283,17 +388,19 @@ export default function ProductDetail() {
                   </Button>
                 ))}
                 <span className="ms-3">
-                  {newReview.rating ? `${newReview.rating}/5` : "Select rating"}
+                  {newReview.rating
+                    ? `${newReview.rating}/5`
+                    : "Select rating"}
                 </span>
               </div>
             </Form.Group>
 
-            {/* Keep existing comment and username fields */}
             <Form.Group className="mb-3">
               <Form.Label>Comment *</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
+                placeholder="Share your thoughts..."
                 value={newReview.comment}
                 onChange={(e) =>
                   setNewReview({ ...newReview, comment: e.target.value })
@@ -303,7 +410,7 @@ export default function ProductDetail() {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Username (optional)</Form.Label>
+              <Form.Label>Your Name (optional)</Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Anonymous"
@@ -317,40 +424,57 @@ export default function ProductDetail() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseReviewModal}>
-            Close
+            Cancel
           </Button>
-          <Button variant="primary" onClick={handleSubmitReview}>
+          <Button
+            variant="primary"
+            onClick={handleSubmitReview}
+            className="nav-hover-effect"
+          >
             Submit Review
           </Button>
         </Modal.Footer>
       </Modal>
 
+      {/* Display Reviews */}
       <Row className="mt-4">
         <Col xs={12}>
           <h4 className="text-gradient mb-3">Customer Reviews</h4>
-          {product.reviews.map((review, index) => (
-            <Card key={index} className="mb-3 border-primary">
-              <Card.Body>
-                <div className="d-flex align-items-center mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className={`fs-5 ${
-                        i < review.rating ? "text-warning" : "text-muted"
-                      }`}
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <Card.Title>{review.reviewerName}</Card.Title>
-                <Card.Text>{review.comment}</Card.Text>
-                <small className="text-muted">
-                  {new Date(review.date).toLocaleDateString()}
-                </small>
-              </Card.Body>
-            </Card>
-          ))}
+          {(product.reviews && product.reviews.length > 0) ? (
+            product.reviews.map((review, index) => (
+              <Card key={index} className="mb-3 border-primary">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      {/* Display Review Title */}
+                      <Card.Title className="mb-1">{review.title || "Review"}</Card.Title>
+                      <small className="text-muted">By: {review.reviewerName}</small>
+                    </div>
+                    <div className="d-flex align-items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <span
+                          key={i}
+                          className={`fs-5 ${
+                            i < review.rating ? "text-warning" : "text-muted"
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                      <strong className="ms-2">{review.rating} / 5</strong>
+                    </div>
+                  </div>
+                  <hr className="my-2"/>
+                  <Card.Text className="mt-2">{review.comment}</Card.Text>
+                  <small className="text-muted d-block text-end">
+                    Reviewed on: {new Date(review.date).toLocaleDateString()}
+                  </small>
+                </Card.Body>
+              </Card>
+            ))
+          ) : (
+            <p>No reviews yet.</p>
+          )}
         </Col>
       </Row>
     </div>

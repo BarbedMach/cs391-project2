@@ -6,30 +6,36 @@ import { Cart, Shop } from "react-bootstrap-icons";
 import api from "@/utils/api";
 
 const NavigationBar = () => {
-  const [cartItemCount, setCartItemCount] = useState(0);
+  const [cartInfo, setCartInfo] = useState({ count: 0, totalValue: 0 });
 
-  const fetchCartCount = async () => {
+  // Fetches cart data (item count and total value)
+  const fetchCartData = async () => {
     try {
       const response = await api.get("/shoppingcart");
-      const totalItems = response.data.reduce(
-        (sum, item) => sum + item.quantity,
+      const items = response.data;
+      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalValue = items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
         0
       );
-      setCartItemCount(totalItems);
+      setCartInfo({ count: totalItems, totalValue: totalValue });
     } catch (err) {
-      console.error("Error fetching cart:", err);
+      console.error("Error fetching cart data:", err);
+      // Keep previous state on error or reset
+      // setCartInfo({ count: 0, totalValue: 0 });
     }
   };
 
   useEffect(() => {
-    fetchCartCount();
+    fetchCartData();
 
-    // Add event listener for cart updates
+    // Event listener for cart updates from other parts of the application
     const handleCartUpdate = () => {
-      fetchCartCount();
+      fetchCartData();
     };
 
     window.addEventListener("cartUpdated", handleCartUpdate);
+    // Cleanup listener on component unmount
     return () => window.removeEventListener("cartUpdated", handleCartUpdate);
   }, []);
 
@@ -75,19 +81,25 @@ const NavigationBar = () => {
           <Nav>
             <Nav.Link
               href="/cart"
-              className="position-relative mx-2 px-3 py-2 rounded-pill nav-hover-effect"
+              className="position-relative mx-2 px-3 py-2 rounded-pill nav-hover-effect d-flex align-items-center"
             >
               <Cart size={18} />
-              <Badge
-                bg="danger"
-                pill
-                className="position-absolute top-25 start-100 translate-middle p-2 border border-2 border-dark"
-                style={{
-                  fontSize: "0.6rem",
-                }}
-              >
-                {cartItemCount}
-              </Badge>
+              <span className="ms-1 me-2">
+                Cart: ${cartInfo.totalValue.toFixed(2)}
+              </span>
+              {cartInfo.count > 0 && (
+                <Badge
+                  bg="danger"
+                  pill
+                  className="position-absolute top-0 start-100 translate-middle p-2 border border-2 border-dark"
+                  style={{
+                    fontSize: "0.6rem",
+                    marginTop: "0.25rem", // Adjust badge position slightly
+                  }}
+                >
+                  {cartInfo.count}
+                </Badge>
+              )}
             </Nav.Link>
           </Nav>
         </Navbar.Collapse>
